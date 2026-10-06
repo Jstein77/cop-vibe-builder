@@ -1,0 +1,80 @@
+# Placeholders: replace AZURE_CLIENT_ID, AZURE_TENANT_ID, AZURE_SUBSCRIPTION_ID, the
+# resource group, registry and plan with the subscription you prepared once.
+# Agents must not edit this file.
+name: deploy
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, closed]
+  push:
+    branches: [main]
+
+permissions:
+  id-token: write
+  contents: read
+  pull-requests: write
+
+env:
+  AZURE_CLIENT_ID: "00000000-0000-0000-0000-000000000000"
+  AZURE_TENANT_ID: "00000000-0000-0000-0000-000000000000"
+  AZURE_SUBSCRIPTION_ID: "00000000-0000-0000-0000-000000000000"
+  RESOURCE_GROUP: rg-cop-appstudio-prod-scus
+  REGISTRY: crcopappstudio
+  WEBAPP: cop-app-template
+  SLOT: ${{ github.event_name == 'push' && 'staging' || format('pr-{0}', github.event.number) }}
+
+jobs:
+  deploy:
+    if: github.event.action != 'closed'
+    runs-on: ubuntu-latest
+    environment: ${{ github.event_name == 'push' && 'production' || 'preview' }}
+    steps:
+      - uses: actions/checkout@v5
+      - run: npm ci && npm test
+
+      - uses: azure/login@v2
+        with:
+          client-id: ${{ env.AZURE_CLIENT_ID }}
+          tenant-id: ${{ env.AZURE_TENANT_ID }}
+          subscription-id: ${{ env.AZURE_SUBSCRIPTION_ID }}
+
+      - run: az acr login --name "$REGISTRY"
+
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: ${{ env.REGISTRY }}.azurecr.io/apps/app-template:${{ github.sha }}
+
+      - if: github.event_name == 'pull_request'
+        run: |
+          az webapp deployment slot create -g "$RESOURCE_GROUP" -n "$WEBAPP" --slot "$SLOT" \
+            || echo "Slot $SLOT already exists"
+
+      - id: deploy
+        uses: azure/webapps-deploy@v3
+        with:
+          app-name: ${{ env.WEBAPP }}
+          slot-name: ${{ env.SLOT }}
+          images: ${{ env.REGISTRY }}.azurecr.io/apps/app-template:${{ github.sha }}
+
+      - if: github.event_name == 'push'
+        run: az webapp deployment slot swap -g "$RESOURCE_GROUP" -n "$WEBAPP" --slot staging --target-slot production
+
+      - if: github.event_name == 'pull_request'
+        run: gh pr comment ${{ github.event.number }} --body "Preview app is live at ${{ steps.deploy.outputs.webapp-url }}"
+        env:
+          GH_TOKEN: ${{ github.token }}
+
+  cleanup:
+    if: github.event.action == 'closed'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: azure/login@v2
+        with:
+          client-id: ${{ env.AZURE_CLIENT_ID }}
+          tenant-id: ${{ env.AZURE_TENANT_ID }}
+          subscription-id: ${{ env.AZURE_SUBSCRIPTION_ID }}
+      - run: |
+          az webapp deployment slot delete -g "$RESOURCE_GROUP" -n "$WEBAPP" --slot "$SLOT" \
+            || echo "No preview slot to delete"

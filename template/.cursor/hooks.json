@@ -1,0 +1,12 @@
+{
+  "version": 1,
+  "hooks": {
+    "beforeShellExecution": [
+      {
+        "command": ".cursor/hooks/block-risky.py",
+        "failClosed": true,
+        "timeout": 15
+      }
+    ]
+  }
+}

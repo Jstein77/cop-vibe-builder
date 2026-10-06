@@ -1,0 +1,32 @@
+{
+  "name": "vibe-builder",
+  "version": "0.1.0",
+  "private": true,
+  "engines": {
+    "node": ">=22.13.0"
+  },
+  "scripts": {
+    "dev": "next dev --hostname 0.0.0.0 --port 4317",
+    "build": "next build",
+    "start": "next start --hostname 0.0.0.0 --port ${PORT:-4317}",
+    "lint": "eslint",
+    "typecheck": "tsc --noEmit",
+    "test": "tsx --test tests/*.test.ts",
+    "starter": "tsx scripts/build-starter.ts"
+  },
+  "dependencies": {
+    "@cursor/sdk": "^1.0.35",
+    "next": "16.3.8",
+    "react": "19.2.8",
+    "react-dom": "19.2.8"
+  },
+  "devDependencies": {
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "eslint": "^9",
+    "eslint-config-next": "16.3.8",
+    "tsx": "^4.23.15",
+    "typescript": "^5"
+  }
+}

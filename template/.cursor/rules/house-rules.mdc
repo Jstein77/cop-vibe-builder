@@ -1,0 +1,11 @@
+---
+description: House rules for every generated app
+alwaysApply: true
+---
+- Use the stack already in package.json. Don't add frameworks.
+- Read data only through approved APIs or MCP servers.
+- Never commit secrets, and never run deploy, az or aws commands.
+- Keep the Dockerfile building; it is how the app deploys to Azure App Service.
+- Listen on port 8080 and return 200 from GET /ping (the health check).
+- Don't edit .github/workflows; the pipeline is owned by the platform team.
+- Add tests for anything that touches data.

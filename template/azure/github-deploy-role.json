@@ -1,0 +1,20 @@
+{
+  "Name": "App Studio GitHub Deployer",
+  "IsCustom": true,
+  "Description": "Least privilege for the template pipeline: push to the app registry and deploy to App Service slots in one resource group.",
+  "Actions": [
+    "Microsoft.ContainerRegistry/registries/read",
+    "Microsoft.ContainerRegistry/registries/push/write",
+    "Microsoft.Web/sites/read",
+    "Microsoft.Web/sites/write",
+    "Microsoft.Web/sites/config/write",
+    "Microsoft.Web/sites/slots/read",
+    "Microsoft.Web/sites/slots/write",
+    "Microsoft.Web/sites/slots/delete",
+    "Microsoft.Web/sites/slots/config/write",
+    "Microsoft.Web/sites/slotsswap/action",
+    "Microsoft.Web/serverfarms/join/action"
+  ],
+  "NotActions": [],
+  "AssignableScopes": ["/subscriptions/<subscription-id>/resourceGroups/rg-cop-appstudio-prod-scus"]
+}
