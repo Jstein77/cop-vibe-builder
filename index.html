@@ -1,0 +1,1047 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Build an internal vibe coding app with the Cursor SDK</title>
+<meta name="description" content="A one-page, step-by-step outline for building an internal vibe coding app with the Cursor SDK and deploying it to Azure.">
+<meta name="author" content="Jordan Stein">
+<meta property="og:title" content="Build an internal vibe coding app with the Cursor SDK">
+<meta property="og:description" content="Describe an app in plain language, let a Cursor agent build it in a governed repo, and ship it to Azure.">
+<meta property="og:type" content="article">
+<meta name="theme-color" content="#ffffff">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='16' fill='%230a0a0a'/%3E%3Cpath d='M10 11.5l5 4.5-5 4.5M17 21h6' stroke='%23fff' stroke-width='2.4' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&amp;family=Geist+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#fff;
+  --fg:#0a0a0a;
+  --muted:#7d8187;
+  --faint:#a3a6ab;
+  --line:rgba(10,10,10,.09);
+  --line-strong:rgba(10,10,10,.14);
+  --chip:rgba(10,10,10,.06);
+  --pill-grey:#edecea;
+  --pill-grey-hover:#e4e3e0;
+  --card:#f5f4f2;
+  --window:#fcfcfc;
+  --code-bg:#fafaf9;
+  --sans:"Geist",ui-sans-serif,system-ui,-apple-system,"Segoe UI",Helvetica,Arial,sans-serif;
+  --mono:"Geist Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+  --ease:cubic-bezier(.2,.7,.2,1);
+  interpolate-size:allow-keywords;
+}
+*,*::before,*::after{box-sizing:border-box}
+html{background:var(--bg);-webkit-text-size-adjust:100%;scroll-behavior:smooth;scroll-padding-top:84px}
+body{margin:0;color:var(--fg);font-family:var(--sans);font-size:16px;line-height:1.5;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;text-rendering:optimizeLegibility}
+a{color:inherit}
+button{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--fg);outline-offset:2px;border-radius:8px}
+code{font-family:var(--mono)}
+p code,li code,summary code{font-size:.86em;background:var(--chip);padding:.1em .38em;border-radius:6px;white-space:nowrap}
+.container{max-width:1280px;margin:0 auto;padding:0 32px}
+.column{max-width:672px;margin:0 auto}
+[hidden]{display:none!important}
+.sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+
+/* nav */
+.nav{position:sticky;top:0;z-index:20;background:rgba(255,255,255,.86);backdrop-filter:saturate(1.4) blur(14px);-webkit-backdrop-filter:saturate(1.4) blur(14px);border-bottom:1px solid transparent;transition:border-color .25s}
+.nav.scrolled{border-bottom-color:var(--line)}
+.nav .container{height:64px;display:flex;align-items:center;gap:24px}
+.brand{display:inline-flex;align-items:center;gap:10px;text-decoration:none;font-size:13px;font-weight:500;letter-spacing:-.01em}
+.mark{width:24px;height:24px;border-radius:999px;background:var(--fg);display:grid;place-items:center;flex:none}
+.mark svg{width:12px;height:12px}
+.nav-links{display:flex;gap:4px;margin-left:12px}
+.nav-links a{font-size:13px;font-weight:500;padding:6px 12px;border-radius:999px;text-decoration:none;transition:background .15s}
+.nav-links a:hover{background:var(--chip)}
+.nav-actions{margin-left:auto;display:flex;gap:8px;align-items:center}
+
+/* pills */
+.pill{display:inline-flex;align-items:center;justify-content:center;gap:6px;height:40px;padding:0 18px;border-radius:9999px;border:0;font-size:14px;font-weight:500;line-height:20px;text-decoration:none;white-space:nowrap;cursor:pointer;transition:background .15s,transform .15s var(--ease)}
+.pill:active{transform:scale(.98)}
+.pill.dark{background:var(--fg);color:#fff}
+.pill.dark:hover{background:#2a2a2a}
+.pill.grey{background:var(--pill-grey);color:var(--fg)}
+.pill.grey:hover{background:var(--pill-grey-hover)}
+.pill.sm{height:36px;padding:0 16px}
+.pill.lg{height:44px;padding:0 24px;font-size:16px;font-weight:400}
+.pill svg{width:14px;height:14px;flex:none}
+
+/* hero */
+.hero{text-align:center;padding:84px 0 0}
+.chip{display:inline-flex;align-items:center;gap:10px;max-width:100%;padding:6px 6px 6px 10px;border-radius:9999px;text-decoration:none;font-size:13px;letter-spacing:-.01em;transition:background .15s}
+.chip:hover{background:rgba(10,10,10,.03)}
+.chip b{font-weight:600}
+.chip .sep{color:rgba(10,10,10,.3);margin:0 4px}
+.chip .arrow{width:24px;height:24px;border-radius:999px;background:var(--chip);display:grid;place-items:center;flex:none;transition:background .15s,transform .2s var(--ease)}
+.chip:hover .arrow{background:rgba(10,10,10,.1);transform:translate(1px,-1px)}
+.chip .arrow svg{width:12px;height:12px}
+h1{margin:20px auto 0;max-width:820px;font-size:60px;line-height:1.02;font-weight:500;letter-spacing:-.022em;text-wrap:balance}
+.sub{margin:20px auto 0;max-width:600px;font-size:18px;line-height:1.625;color:var(--muted);text-wrap:balance}
+.cta{display:flex;justify-content:center;gap:8px;margin-top:28px;flex-wrap:wrap}
+.byline{display:inline-flex;align-items:center;gap:10px;margin:28px auto 0;font-size:13px;color:var(--muted);text-align:left}
+.byline .avatar{width:24px;height:24px;border-radius:999px;background:#4db6a4;color:#fff;display:grid;place-items:center;font-size:10px;font-weight:600;letter-spacing:.02em;flex:none}
+.byline b{color:var(--fg);font-weight:500}
+
+/* sections */
+.section-head{text-align:center}
+h2{margin:0;font-size:36px;line-height:1.1;font-weight:500;letter-spacing:-.018em;text-wrap:balance}
+.section-head p{margin:14px auto 0;max-width:560px;color:var(--muted);font-size:16px;line-height:1.625;text-wrap:balance}
+
+/* summary */
+.summary{padding:112px 0 0}
+.tldr{list-style:none;margin:40px 0 0;padding:0;counter-reset:t}
+.tldr li{counter-increment:t;display:grid;grid-template-columns:36px minmax(0,1fr);gap:12px;padding:16px 0;border-top:1px solid var(--line);font-size:16px;line-height:1.6}
+.tldr li:last-child{border-bottom:1px solid var(--line)}
+.tldr li::before{content:counter(t,decimal-leading-zero);font-family:var(--mono);font-size:12px;color:var(--faint);padding-top:4px}
+
+/* app window */
+.window{position:relative;max-width:976px;margin:64px auto 0;border-radius:24px;background:var(--window);border:1px solid var(--line);box-shadow:0 1px 2px rgba(10,10,10,.03),0 24px 64px -32px rgba(10,10,10,.14);overflow:hidden}
+.titlebar{height:44px;display:flex;align-items:center;gap:14px;padding:0 16px;border-bottom:1px solid var(--line);background:rgba(255,255,255,.7)}
+.lights{display:flex;gap:8px;flex:none}
+.lights i{width:12px;height:12px;border-radius:999px;box-shadow:inset 0 0 0 .5px rgba(0,0,0,.2)}
+.lights i:nth-child(1){background:#ff5f57}.lights i:nth-child(2){background:#febc2e}.lights i:nth-child(3){background:#28c840}
+.titlebar .title{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:500;min-width:0;padding-left:8px}
+.titlebar .title span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.titlebar .dot{width:16px;height:16px;border-radius:999px;background:#f59e3c;flex:none;position:relative}
+.titlebar .dot::before,.titlebar .dot::after{content:"";position:absolute;top:5px;width:2px;height:4px;border-radius:2px;background:#fff}
+.titlebar .dot::before{left:5px}.titlebar .dot::after{right:5px}
+.titlebar .icon{margin-left:auto;width:14px;height:14px;color:rgba(20,20,20,.6);flex:none}
+.win-body{padding:28px 32px 32px}
+.request{display:flex;justify-content:flex-end}
+.bubble{max-width:520px;background:var(--fg);color:#fff;border-radius:16px;padding:12px 16px;font-size:14px;line-height:1.55}
+.bubble small{display:block;color:rgba(255,255,255,.55);font-size:12px;margin-bottom:2px}
+.request .bubble,.reply .bubble{margin:0}
+.reply{display:flex;margin-top:12px}
+.bubble.grey{background:#f0efed;color:var(--fg);max-width:460px}
+.status{display:flex;align-items:center;gap:10px;margin:18px 0 4px;font-size:13px;color:var(--faint)}
+.status .spin{width:14px;height:14px;position:relative;flex:none}
+.status .spin i{position:absolute;inset:4px;border-radius:999px;background:#f59e3c}
+.status .spin::before{content:"";position:absolute;inset:0;border-radius:999px;border:1.5px solid rgba(245,158,60,.25);border-top-color:#f59e3c;animation:spin 1s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.lane{margin-top:22px}
+.lane-label{font-size:12px;font-weight:500;color:var(--muted);margin:0 0 10px 2px}
+.nodes{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px}
+.node{position:relative;background:#fff;border:1px solid var(--line);border-radius:16px;padding:14px 14px 16px;transition:border-color .35s var(--ease),box-shadow .35s var(--ease),transform .35s var(--ease)}
+.node:not(:nth-child(4n))::after{content:"";position:absolute;top:50%;right:-13px;width:10px;height:10px;transform:translateY(-50%);background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 10'%3E%3Cpath d='M3 1.5 6.5 5 3 8.5' fill='none' stroke='%23a3a6ab' stroke-width='1.4' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center/10px no-repeat}
+.node .top{display:flex;align-items:center;justify-content:space-between}
+.node .ic{width:28px;height:28px;border-radius:999px;display:grid;place-items:center;color:#fff;background:var(--c)}
+.node .ic svg{width:14px;height:14px}
+.node .n{font-family:var(--mono);font-size:11px;color:var(--faint)}
+.node .t{margin-top:12px;font-size:14px;font-weight:500;letter-spacing:-.005em}
+.node .t code{font-size:13px}
+.node .d{margin-top:2px;font-size:13px;line-height:1.45;color:var(--muted)}
+.node.active{border-color:var(--line-strong);box-shadow:0 6px 20px -10px rgba(10,10,10,.22);transform:translateY(-2px)}
+.node.done .n::after{content:" ✓";color:#28a745}
+
+/* architecture */
+.arch{padding:128px 0 0}
+.arch-window{max-width:1120px}
+.arch-body{padding:24px 24px 20px}
+.arch-canvas svg{display:block;width:100%;height:auto;font-family:var(--sans);overflow:visible}
+.az-band{fill:#f7f6f4;stroke:var(--line)}
+.az-name{font-size:14px;font-weight:500;letter-spacing:-.01em;fill:var(--fg)}
+.az-sub{font-size:11px;fill:var(--muted)}
+.an{cursor:pointer;outline:none;transition:opacity .25s var(--ease)}
+.an-box{fill:#fff;stroke:var(--line-strong);transition:stroke .2s,filter .2s}
+.an-k{font-family:var(--mono);font-size:9px;letter-spacing:.06em;text-transform:uppercase;fill:var(--faint)}
+.an-t{font-size:13.5px;font-weight:500;letter-spacing:-.005em;fill:var(--fg)}
+.an-d{font-size:11px;fill:var(--muted)}
+.an-b rect{fill:var(--chip);transition:fill .2s}
+.an-b text{font-family:var(--mono);font-size:9.5px;fill:#5b5e63;text-anchor:middle}
+.an-b:hover rect,.an-b.on rect{fill:var(--fg)}
+.an-b:hover text,.an-b.on text{fill:#fff}
+.an:hover .an-box,.an:focus-visible .an-box,.an.hot .an-box{stroke:var(--fg);filter:drop-shadow(0 6px 14px rgba(10,10,10,.12))}
+.an:focus-visible .an-box{stroke-width:2}
+.ae{pointer-events:none;transition:opacity .25s var(--ease)}
+.ae-line{fill:none;stroke:#c3c2be;stroke-width:1.3;stroke-linejoin:round;transition:stroke .2s}
+.ae-flow{fill:none;stroke:var(--c);stroke-width:1.8;stroke-linecap:round;stroke-dasharray:1.5 12.5;opacity:.7;animation:flow 1.4s linear infinite}
+.ae-l{font-family:var(--mono);font-size:10px;fill:#6b6e73;paint-order:stroke;stroke:var(--window);stroke-width:5px;stroke-linejoin:round}
+.ae-l.in-band{stroke:#f7f6f4}
+.ae-head{fill:#c3c2be;transition:fill .2s}
+.focus .an:not(.hot){opacity:.32}
+.focus .ae:not(.hot){opacity:.14}
+.ae.hot .ae-line{stroke:var(--fg)}
+.ae.hot .ae-l{fill:var(--fg)}
+@keyframes flow{to{stroke-dashoffset:-28}}
+.arch-legend{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin-top:20px;padding-top:18px;border-top:1px solid var(--line)}
+.arch-legend a{display:inline-flex;align-items:center;gap:8px;height:30px;padding:0 12px 0 5px;border-radius:999px;background:#fff;border:1px solid var(--line);font-size:12.5px;font-weight:500;text-decoration:none;transition:background .15s,border-color .15s,color .15s}
+.arch-legend a b{font-family:var(--mono);font-size:10px;font-weight:400;width:20px;height:20px;border-radius:999px;background:var(--chip);display:grid;place-items:center;transition:background .15s,color .15s}
+.arch-legend a:hover,.arch-legend a.hot{border-color:var(--fg)}
+.arch-legend a:hover b,.arch-legend a.hot b{background:var(--fg);color:#fff}
+.arch-note{margin:14px 0 0;text-align:center;font-size:12.5px;color:var(--muted)}
+.arch-stack{display:none}
+.step.flash{animation:flash 1.2s var(--ease)}
+@keyframes flash{0%,40%{box-shadow:0 0 0 2px var(--fg)}100%{box-shadow:0 0 0 2px transparent}}
+
+/* architecture, stacked */
+.azs{border:1px solid var(--line);background:#f7f6f4;border-radius:18px;padding:14px}
+.azs + .azs{margin-top:22px;position:relative}
+.azs + .azs::before{content:"";position:absolute;left:50%;top:-23px;width:1px;height:22px;background:var(--line-strong)}
+.azs-head{display:flex;align-items:center;gap:10px;margin:0 2px 12px}
+.azs-head .ic{width:24px;height:24px;border-radius:8px;display:grid;place-items:center;color:#fff;background:var(--c);flex:none}
+.azs-head .ic svg{width:13px;height:13px}
+.azs-head b{display:block;font-size:15px;font-weight:500;line-height:1.3;letter-spacing:-.01em}
+.azs-head div span{display:block;font-size:12.5px;line-height:1.35;color:var(--muted)}
+.azs-list{display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(240px,1fr))}
+.anc{display:block;background:#fff;border:1px solid var(--line-strong);border-radius:14px;padding:12px 14px;text-decoration:none;transition:border-color .2s,box-shadow .2s}
+.anc:hover,.anc:focus-visible{border-color:var(--fg);box-shadow:0 6px 14px -8px rgba(10,10,10,.2)}
+.anc-top{display:flex;align-items:center;gap:8px}
+.anc-top .ic{width:22px;height:22px;border-radius:999px;display:grid;place-items:center;color:#fff;background:var(--c);flex:none}
+.anc-top .ic svg{width:12px;height:12px}
+.anc-k{font-family:var(--mono);font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--faint);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.anc-s{margin-left:auto;display:flex;gap:4px;flex:none}
+.anc-s i{font-style:normal;font-family:var(--mono);font-size:10px;padding:2px 6px;border-radius:999px;background:var(--chip);color:#5b5e63}
+.anc-t{margin-top:8px;font-size:14.5px;font-weight:500;letter-spacing:-.005em}
+.anc-d{margin-top:1px;font-size:13px;color:var(--muted)}
+.anc-f{list-style:none;margin:10px 0 0;padding:8px 0 0;border-top:1px dashed var(--line-strong);display:grid;gap:4px}
+.anc-f li{font-size:12.5px;color:#3d3f43;display:flex;gap:6px;align-items:baseline}
+.anc-f li::before{content:"\2192";color:var(--faint)}
+.anc-n{font-family:var(--mono);font-size:10.5px;color:var(--faint)}
+.anc-f code{font-size:11.5px;background:var(--chip);padding:.05em .4em;border-radius:5px}
+
+/* steps */
+.steps{padding:128px 0 0}
+.steps-inner{max-width:808px;margin:0 auto}
+.toolbar{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:40px 0 12px}
+.toolbar span{font-size:13px;color:var(--muted)}
+.step{background:var(--card);border-radius:20px;margin-top:8px;transition:background .2s}
+.step:hover{background:#f1f0ee}
+.step[open]{background:var(--card)}
+.step summary{list-style:none;display:grid;grid-template-columns:36px minmax(0,1fr) 28px;align-items:center;gap:16px;padding:20px 20px 20px 24px;cursor:pointer;border-radius:20px}
+.step summary::-webkit-details-marker{display:none}
+.step .num{font-family:var(--mono);font-size:12px;color:var(--faint)}
+.step h3{margin:0;font-size:17px;line-height:1.35;font-weight:500;letter-spacing:-.01em}
+.step .one{margin:3px 0 0;font-size:14px;line-height:1.5;color:var(--muted)}
+.step .toggle{width:28px;height:28px;border-radius:999px;background:rgba(10,10,10,.06);display:grid;place-items:center;transition:transform .3s var(--ease),background .15s}
+.step .toggle svg{width:12px;height:12px}
+.step[open] .toggle{transform:rotate(45deg)}
+.step summary:hover .toggle{background:rgba(10,10,10,.1)}
+.step::details-content{height:0;overflow:clip;transition:height .35s var(--ease),content-visibility .35s allow-discrete}
+.step[open]::details-content{height:auto}
+.body{padding:0 24px 24px 76px;display:grid;gap:14px;min-width:0}
+.body > p{margin:0;font-size:15px;line-height:1.65;color:#3d3f43}
+.caveat{display:flex;gap:10px;align-items:flex-start;background:#fff;border:1px solid var(--line);border-radius:14px;padding:12px 14px;font-size:14px;line-height:1.55;color:#3d3f43}
+.caveat::before{content:"";flex:none;width:6px;height:6px;border-radius:999px;background:#f59e3c;margin-top:8px}
+.caveat b{font-weight:500;color:var(--fg)}
+.caveat code.wrap{white-space:normal;overflow-wrap:anywhere}
+.caveat a,.body a{text-underline-offset:3px;text-decoration-color:rgba(10,10,10,.3)}
+
+/* code */
+.code{margin:0;background:#fff;border:1px solid var(--line);border-radius:14px;overflow:hidden;min-width:0}
+.code-head{display:flex;align-items:center;gap:10px;height:36px;padding:0 8px 0 14px;border-bottom:1px solid var(--line);background:var(--code-bg)}
+.code-head .lights{gap:6px}.code-head .lights i{width:9px;height:9px;background:#dcdcd9;box-shadow:none}
+.code-title{flex:1;min-width:0;font-family:var(--mono);font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.copy{height:24px;padding:0 10px;border-radius:999px;border:0;background:transparent;font-size:12px;color:var(--muted);cursor:pointer;transition:background .15s,color .15s}
+.copy:hover{background:var(--chip);color:var(--fg)}
+pre{margin:0;padding:14px 16px;overflow-x:auto;font-size:12.5px;line-height:1.7;color:#1f2023;tab-size:2;-webkit-overflow-scrolling:touch}
+pre code{font-family:var(--mono)}
+.k{color:#6246d8}.s{color:#b4531f}.c{color:#9a9ea5}.f{color:#1a6fc4}.m{color:#0f8a6b}
+
+/* footer */
+footer{margin-top:128px;border-top:1px solid var(--line);padding:40px 0 56px;font-size:13px;color:var(--muted)}
+footer .row{display:flex;justify-content:space-between;gap:32px;flex-wrap:wrap}
+footer .fine{margin:0;max-width:560px;line-height:1.65}
+footer .fine b{color:var(--fg);font-weight:500}
+footer nav{display:flex;gap:6px 18px;flex-wrap:wrap;align-content:flex-start}
+footer nav a{text-decoration:none;color:var(--fg)}
+footer nav a:hover{text-decoration:underline;text-underline-offset:3px}
+
+/* motion */
+.js .reveal{opacity:0;transform:translateY(14px);transition:opacity .7s var(--ease),transform .7s var(--ease);transition-delay:var(--d,0s)}
+.js .reveal.in{opacity:1;transform:none}
+@media (prefers-reduced-motion:reduce){
+  html{scroll-behavior:auto}
+  .js .reveal{opacity:1;transform:none;transition:none}
+  .node,.step::details-content,.step .toggle,.pill,.chip .arrow{transition:none}
+  .status .spin::before{animation:none}
+  .node.active{transform:none}
+  .ae-flow{display:none}
+  .an,.ae,.an-box,.ae-line,.anc{transition:none}
+  .step.flash{animation:none}
+}
+
+/* responsive */
+@media (max-width:999px){
+  .arch-canvas{display:none}
+  .arch-stack{display:block}
+  .arch-note{display:none}
+}
+@media (max-width:900px){
+  .nav-links{display:none}
+  .nodes{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .node:not(:nth-child(4n))::after{display:none}
+}
+@media (max-width:640px){
+  .container{padding:0 20px}
+  .nav .container{height:60px}
+  .nav-actions .grey{display:none}
+  .hero{padding-top:56px}
+  h1{font-size:38px;line-height:1.05;letter-spacing:-.02em}
+  .sub{font-size:17px}
+  .chip .more{display:none}
+  .cta .pill.lg{padding:0 20px}
+  .byline .role{display:block}
+  .summary{padding-top:88px}
+  h2{font-size:30px}
+  .tldr li{grid-template-columns:28px minmax(0,1fr);font-size:15px}
+  .window{margin-top:48px;border-radius:20px}
+  .win-body{padding:20px 14px 18px}
+  .bubble{font-size:13.5px}
+  .nodes{grid-template-columns:minmax(0,1fr);gap:10px}
+  .node{display:grid;grid-template-columns:28px minmax(0,1fr) auto;column-gap:12px;align-items:start;padding:12px 14px}
+  .node .top{display:contents}
+  .node .ic{grid-row:span 2}
+  .node .n{grid-column:3;grid-row:1;padding-top:2px}
+  .node .t{margin-top:0;grid-column:2;grid-row:1}
+  .node .d{grid-column:2 / span 2;grid-row:2}
+  .node:not(:last-child)::after{display:block;content:"";top:auto;bottom:-10px;right:auto;left:27px;width:1px;height:10px;transform:none;background:var(--line-strong)}
+  .arch{padding-top:96px}
+  .arch-body{padding:14px 12px 16px}
+  .azs{padding:12px 10px}
+  .azs-list{grid-template-columns:minmax(0,1fr)}
+  .arch-legend{justify-content:flex-start}
+  .steps{padding-top:96px}
+  .toolbar{margin-top:32px}
+  .step summary{grid-template-columns:minmax(0,1fr) 28px;padding:18px 16px 18px 18px;gap:12px}
+  .step .num{display:none}
+  .step h3{font-size:16px}
+  .step h3::before{content:attr(data-n) "  ";font-family:var(--mono);font-size:12px;color:var(--faint);font-weight:400;white-space:pre}
+  .body{padding:0 12px 14px}
+  pre{font-size:12px;padding:12px 14px}
+  footer{margin-top:96px}
+}
+</style>
+</head>
+<body>
+<header class="nav" id="nav">
+  <div class="container">
+    <a class="brand" href="#top" aria-label="Vibe coding app guide, back to top">
+      <span class="mark" aria-hidden="true"><svg viewBox="0 0 12 12"><path d="M2.5 3 5.5 6l-3 3M6.5 9.5h3" stroke="#fff" stroke-width="1.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+      Vibe coding app guide
+    </a>
+    <nav class="nav-links" aria-label="Sections">
+      <a href="#summary">Summary</a>
+      <a href="#architecture">Architecture</a>
+      <a href="#steps">Steps</a>
+      <a href="#deploy">Deploy to Azure</a>
+    </nav>
+    <div class="nav-actions">
+      <a class="pill grey" href="https://github.com/cursor/cookbook/tree/main/sdk/app-builder" target="_blank" rel="noopener">Reference sample</a>
+      <a class="pill dark sm" href="https://cursor.com/docs/sdk/typescript" target="_blank" rel="noopener">SDK docs</a>
+    </div>
+  </div>
+</header>
+
+<main id="top">
+  <section class="hero container">
+    <a class="chip reveal" href="https://cursor.com/docs/sdk/typescript" target="_blank" rel="noopener">
+      <span><b>Built on the Cursor SDK</b><span class="more"><span class="sep">•</span>Read the TypeScript docs</span></span>
+      <span class="arrow" aria-hidden="true"><svg viewBox="0 0 12 12"><path d="M4 8 8 4M4.5 4H8v3.5" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+    </a>
+    <h1 class="reveal" style="--d:.06s">Build an internal vibe coding app with the Cursor SDK</h1>
+    <p class="sub reveal" style="--d:.12s">Your team describes an app in plain language, a Cursor agent builds it in a governed repo, and your pipeline ships it to Azure.</p>
+    <div class="cta reveal" style="--d:.18s">
+      <a class="pill dark lg" href="#summary">Read the summary</a>
+      <a class="pill grey lg" href="#steps">See the steps</a>
+    </div>
+    <p class="byline reveal" style="--d:.24s"><span class="avatar" aria-hidden="true">JS</span><span>Prepared for <b>ConocoPhillips</b> by <b>Jordan Stein</b>, <span class="role">Field Engineer, Cursor</span></span></p>
+  </section>
+
+  <section class="summary container" id="summary" aria-labelledby="summary-title">
+    <div class="column">
+      <div class="section-head reveal">
+        <h2 id="summary-title">The whole approach, in one read</h2>
+        <p>Everything below the diagram is detail. If you only read this part, you have the plan.</p>
+      </div>
+      <ol class="tldr">
+        <li class="reveal"><span>People describe the app they need in a prompt box, and a server route calls <code>Agent.create()</code> to turn each request into a Cursor cloud agent, using a service account key that never leaves the server.</span></li>
+        <li class="reveal"><span>Every agent starts from a template repo whose rules, hooks and environment pin your approved stack and block risky commands such as deploys.</span></li>
+        <li class="reveal"><span>Progress streams back to the requester as it happens, and each request lands on its own branch with its own pull request in GitHub.</span></li>
+        <li class="reveal"><span>Nothing ships without a person signing off. GitHub Actions runs your tests, deploys a preview app on Azure, and change requests go back to the same agent.</span></li>
+        <li class="reveal"><span>Merging is the deploy. GitHub Actions signs in to Azure with short-lived OIDC credentials and ships the merged commit to Azure App Service, so agents never hold Azure credentials.</span></li>
+        <li class="reveal"><span>Tag every agent, track spend per generated app, and fold repeat review feedback back into the template.</span></li>
+      </ol>
+    </div>
+
+    <figure class="window reveal" aria-labelledby="flow-title">
+      <div class="titlebar">
+        <div class="lights" aria-hidden="true"><i></i><i></i><i></i></div>
+        <div class="title"><span class="dot" aria-hidden="true"></span><span id="flow-title">How a request flows</span></div>
+        <svg class="icon" viewBox="0 0 16 16" aria-hidden="true"><rect x="2" y="2.5" width="12" height="8.5" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.3"/><path d="M5.5 13.5h5M8 11v2.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
+      </div>
+      <div class="win-body">
+        <div class="request">
+          <p class="bubble"><small>Prompt box</small>Build a dashboard that shows open support tickets by team, with a date filter and an export button.</p>
+        </div>
+        <div class="reply">
+          <p class="bubble grey">On it. I'll build this from your app template, run the tests, and open a pull request for review when it's ready.</p>
+        </div>
+        <p class="status"><span class="spin" aria-hidden="true"><i></i></span><span id="flow-status">From prompt to production in eight stages</span></p>
+
+        <div class="lane">
+          <p class="lane-label">In your app</p>
+          <ol class="nodes" data-lane="1">
+            <li class="node" style="--c:#4db6a4"><div class="top"><span class="ic" aria-hidden="true"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3.5" width="12" height="9" rx="2"/><path d="M5 8h1"/></svg></span><span class="n">01</span></div><div class="t">Prompt box</div><div class="d">Someone describes the app they need</div></li>
+            <li class="node" style="--c:#f59e3c"><div class="top"><span class="ic" aria-hidden="true"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="2.5" width="11" height="4.5" rx="1.2"/><rect x="2.5" y="9" width="11" height="4.5" rx="1.2"/><path d="M5 4.75h.01M5 11.25h.01"/></svg></span><span class="n">02</span></div><div class="t">Server route</div><div class="d">Holds the API key and checks who is asking</div></li>
+            <li class="node" style="--c:#5a5fe0"><div class="top"><span class="ic" aria-hidden="true"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2.5v2M8 11.5v2M2.5 8h2M11.5 8h2M4.2 4.2l1.4 1.4M10.4 10.4l1.4 1.4M4.2 11.8l1.4-1.4M10.4 5.6l1.4-1.4"/></svg></span><span class="n">03</span></div><div class="t"><code>Agent.create()</code></div><div class="d">A cloud agent builds from your template</div></li>
+            <li class="node" style="--c:#8d63e8"><div class="top"><span class="ic" aria-hidden="true"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M2 8.5h2.5l1.5-4 3 7 1.5-3H14"/></svg></span><span class="n">04</span></div><div class="t">Streamed progress</div><div class="d">The requester watches it plan, edit and test</div></li>
+          </ol>
+        </div>
+        <div class="lane">
+          <p class="lane-label">Through your pipeline</p>
+          <ol class="nodes" start="5" data-lane="2">
+            <li class="node" style="--c:#3a7cf0"><div class="top"><span class="ic" aria-hidden="true"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="4.5" cy="4" r="1.5"/><circle cx="4.5" cy="12" r="1.5"/><circle cx="11.5" cy="12" r="1.5"/><path d="M4.5 5.5v5M11.5 10.5V7a2 2 0 0 0-2-2H8m1.5-1.5L8 5l1.5 1.5"/></svg></span><span class="n">05</span></div><div class="t">Pull request</div><div class="d">One branch and one PR per request in GitHub</div></li>
+            <li class="node" style="--c:#f06b3c"><div class="top"><span class="ic" aria-hidden="true"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M1.5 8S4 3.5 8 3.5 14.5 8 14.5 8 12 12.5 8 12.5 1.5 8 1.5 8Z"/><circle cx="8" cy="8" r="2"/></svg></span><span class="n">06</span></div><div class="t">Preview</div><div class="d">GitHub Actions, a preview app and human review</div></li>
+            <li class="node" style="--c:#2fae69"><div class="top"><span class="ic" aria-hidden="true"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M8 10.5V3M5 6l3-3 3 3M3 10.5v1.5a1.5 1.5 0 0 0 1.5 1.5h7A1.5 1.5 0 0 0 13 12v-1.5"/></svg></span><span class="n">07</span></div><div class="t">Deploy to Azure</div><div class="d">Merging ships it to Azure App Service</div></li>
+            <li class="node" style="--c:#3f4046"><div class="top"><span class="ic" aria-hidden="true"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M8 1.8 13 3.8v3.9c0 3-2.1 5.4-5 6.5-2.9-1.1-5-3.5-5-6.5V3.8Z"/><path d="m5.8 8 1.5 1.5 3-3"/></svg></span><span class="n">08</span></div><div class="t">Govern</div><div class="d">Tags, spend per app and archiving</div></li>
+          </ol>
+        </div>
+      </div>
+    </figure>
+  </section>
+
+  <section class="arch container" id="architecture" aria-labelledby="arch-title">
+    <div class="column">
+      <div class="section-head reveal">
+        <h2 id="arch-title">The architecture, end to end</h2>
+        <p>Four zones and the flows between them. The numbers match the steps below, so hover a component to trace its flows or click it to open that step.</p>
+      </div>
+    </div>
+    <figure class="window arch-window reveal" aria-labelledby="arch-caption">
+      <div class="titlebar">
+        <div class="lights" aria-hidden="true"><i></i><i></i><i></i></div>
+        <div class="title"><span class="dot" aria-hidden="true"></span><span>Solution architecture</span></div>
+        <svg class="icon" viewBox="0 0 16 16" aria-hidden="true"><rect x="1.5" y="2" width="5" height="5" rx="1.2" fill="none" stroke="currentColor" stroke-width="1.3"/><rect x="9.5" y="9" width="5" height="5" rx="1.2" fill="none" stroke="currentColor" stroke-width="1.3"/><path d="M6.5 4.5H10a1.5 1.5 0 0 1 1.5 1.5v3" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
+      </div>
+      <div class="arch-body">
+        <figcaption class="sr-only" id="arch-caption">A requester types a prompt into the builder app, whose server route uses the Cursor SDK to start a cloud agent. The agent clones the app template from GitHub, builds the app and opens a branch and pull request in GitHub, streaming progress back to the requester. The pull request runs a GitHub Actions workflow, which runs tests and deploys a preview app per pull request to an Azure App Service deployment slot. A reviewer approves or sends follow-ups to the same agent. Merging to main runs the workflow again, which deploys the production app on Azure App Service. The builder app reads the Cursor API key from Azure Key Vault, and usage is tracked per agent.</figcaption>
+        <div class="arch-canvas" id="arch-canvas"></div>
+        <div class="arch-stack" id="arch-stack"></div>
+        <p class="arch-note">Arrows follow a request from prompt to production. Agents never hold Azure credentials; only GitHub Actions deploys, through an OIDC federated credential.</p>
+        <nav class="arch-legend" id="arch-legend" aria-label="Steps shown in the diagram">
+          <a href="#step-1" data-step="1"><b>01</b>Prerequisites</a>
+          <a href="#step-2" data-step="2"><b>02</b>Install the SDK</a>
+          <a href="#step-3" data-step="3"><b>03</b>Template and guardrails</a>
+          <a href="#step-4" data-step="4"><b>04</b>Prompt box and route</a>
+          <a href="#step-5" data-step="5"><b>05</b>Stream progress</a>
+          <a href="#step-6" data-step="6"><b>06</b>Review and preview</a>
+          <a href="#deploy" data-step="7"><b>07</b>Deploy to Azure</a>
+          <a href="#step-8" data-step="8"><b>08</b>Govern</a>
+        </nav>
+      </div>
+    </figure>
+  </section>
+
+  <section class="steps container" id="steps" aria-labelledby="steps-title">
+    <div class="steps-inner">
+      <div class="section-head reveal">
+        <h2 id="steps-title">Eight steps, from prompt to production</h2>
+        <p>Open any step for the code and the caveats. Everything uses <code>@cursor/sdk</code> in TypeScript on Node.js 22.13 or later.</p>
+      </div>
+      <div class="toolbar reveal">
+        <span id="open-count">0 of 8 open</span>
+        <button class="pill grey sm" id="toggle-all" type="button" aria-controls="step-list">Expand all</button>
+      </div>
+
+      <div id="step-list">
+        <details class="step reveal" id="step-1">
+          <summary><span class="num" aria-hidden="true">01</span><div><h3 data-n="01">Line up the prerequisites</h3><p class="one">A paid Cursor team, GitHub connected to Cursor, an Azure subscription, Node.js 22.13 or later, and a server-only API key.</p></div><span class="toggle" aria-hidden="true"><svg viewBox="0 0 12 12"><path d="M6 2v8M2 6h8" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg></span></summary>
+          <div class="body">
+            <p>You need a Cursor team on a paid plan, a GitHub organization that holds the template repo and runs GitHub Actions, an Azure subscription with the Azure CLI installed, and Node.js 22.13 or later. Connect GitHub under Integrations in the Cursor dashboard and give the Cursor GitHub app access to the template repo, so cloud agents can clone it, push branches and open pull requests. For a shared internal app, use a service account API key so usage bills to the team, and keep it strictly on the server.</p>
+            <figure class="code"><div class="code-head"><span class="code-title">terminal</span><button class="copy" type="button">Copy</button></div><pre><code data-lang="sh">node -v                       # v22.13 or later
+az version                    # Azure CLI 2.x
+az account show               # signed in to the target subscription
+gh auth status                # GitHub CLI, signed in to your org
+export CURSOR_API_KEY="..."   # service account key, server only</code></pre></figure>
+            <p class="caveat"><span><b>With a service account key, pull requests open as the Cursor GitHub App.</b> The SDK's <code>openAsCursorGithubApp</code> option defaults to true for service account keys, so agent pull requests come from the app rather than a person, and the app needs write access to the template repo. See the <a href="https://cursor.com/docs/integrations/github" target="_blank" rel="noopener">GitHub integration docs</a>.</span></p>
+          </div>
+        </details>
+
+        <details class="step reveal" id="step-2">
+          <summary><span class="num" aria-hidden="true">02</span><div><h3 data-n="02">Install the Cursor SDK</h3><p class="one">Install <code>@cursor/sdk</code>, then ask <code>Cursor.models.list()</code> which models your team allows.</p></div><span class="toggle" aria-hidden="true"><svg viewBox="0 0 12 12"><path d="M6 2v8M2 6h8" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg></span></summary>
+          <div class="body">
+            <p>The package is scoped, so install <code>@cursor/sdk</code>. Before you pick a model, ask the SDK which ones your team allows rather than hard-coding a guess.</p>
+            <figure class="code"><div class="code-head"><span class="code-title">terminal</span><button class="copy" type="button">Copy</button></div><pre><code data-lang="sh">npm install @cursor/sdk</code></pre></figure>
+            <figure class="code"><div class="code-head"><span class="code-title">check.ts</span><button class="copy" type="button">Copy</button></div><pre><code data-lang="ts">import { Cursor } from "@cursor/sdk";
+
+const models = await Cursor.models.list();
+console.log(models.map((m) =&gt; m.id));   // model ids your team can use</code></pre></figure>
+            <p class="caveat"><span><b>Confirm models with <code>Cursor.models.list()</code>.</b> Model ids and features vary by plan and team settings, so treat the list as the source of truth before you hard-code one.</span></p>
+          </div>
+        </details>
+
+        <details class="step reveal" id="step-3">
+          <summary><span class="num" aria-hidden="true">03</span><div><h3 data-n="03">Give agents a template repo with guardrails</h3><p class="one">Rules, hooks and environment config pin your approved stack and block risky commands.</p></div><span class="toggle" aria-hidden="true"><svg viewBox="0 0 12 12"><path d="M6 2v8M2 6h8" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg></span></summary>
+          <div class="body">
+            <p>Every generated app starts from a starter repo in GitHub that pins your approved stack. Project rules in <code>.cursor/rules</code> shape what the agent writes, <code>.cursor/hooks.json</code> can block risky shell commands such as deploys, and <code>.cursor/environment.json</code> lets cloud agents install dependencies and run your tests. Include a Dockerfile, since that is the container image Azure App Service runs, and the <code>.github/workflows/deploy.yml</code> from step 07.</p>
+            <figure class="code"><div class="code-head"><span class="code-title">.cursor/rules/house-rules.mdc</span><button class="copy" type="button">Copy</button></div><pre><code data-lang="md">---
+description: House rules for every generated app
+alwaysApply: true
+---
+- Use the stack already in package.json. Don't add frameworks.
+- Read data only through approved APIs or MCP servers.
+- Never commit secrets, and never run deploy, az or aws commands.
+- Keep the Dockerfile building; it is how the app deploys to Azure App Service.
+- Listen on port 8080 and return 200 from GET /ping (the health check).
+- Don't edit .github/workflows; the pipeline is owned by the platform team.
+- Add tests for anything that touches data.</code></pre></figure>
+            <p class="caveat"><span>See the <a href="https://cursor.com/docs/rules" target="_blank" rel="noopener">Rules</a> and <a href="https://cursor.com/docs/hooks" target="_blank" rel="noopener">Hooks</a> docs for the file formats. Hooks are file-based only, so the guardrails live in the template rather than in your server code.</span></p>
+            <p class="caveat"><span><b>Back the rules with a <code>CODEOWNERS</code> entry for <code>.github/</code>.</b> A rule asks the agent not to touch the pipeline; code owners plus branch protection make sure any change to it still needs platform-team review.</span></p>
+          </div>
+        </details>
+
+        <details class="step reveal" id="step-4">
+          <summary><span class="num" aria-hidden="true">04</span><div><h3 data-n="04">Wire the prompt box to a server route</h3><p class="one">The route checks who is asking, creates a cloud agent on the template and sends the prompt.</p></div><span class="toggle" aria-hidden="true"><svg viewBox="0 0 12 12"><path d="M6 2v8M2 6h8" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg></span></summary>
+          <div class="body">
+            <p>The browser posts the plain-language request to your route. The route confirms who is asking, creates a cloud agent on the template repo, tags it with the requester, and sends the prompt. Each request ends up on its own branch with its own pull request.</p>
+            <figure class="code"><div class="code-head"><span class="code-title">app/api/build/route.ts</span><button class="copy" type="button">Copy</button></div><pre><code data-lang="ts">import { Agent } from "@cursor/sdk";
+
+export const runtime = "nodejs";
+
+export async function POST(req: Request) {
+  const user = await requireUser(req);   // your SSO or auth layer
+  const { prompt } = await req.json();
+
+  const agent = await Agent.create({
+    apiKey: process.env.CURSOR_API_KEY!,
+    model: { id: "composer-2.5" },       // any id from Cursor.models.list()
+    cloud: {
+      repos: [{
+        url: "https://github.com/your-org/app-template",
+        startingRef: "main",
+      }],
+      autoCreatePR: true,
+      metadata: { end_user_id: user.id },
+    },
+  });
+
+  const run = await agent.send(prompt);
+  return streamRun(run);                 // step 05
+}</code></pre></figure>
+            <p class="caveat"><span><b>Run one agent against your template first</b> to confirm <code>autoCreatePR</code> opens the pull request in GitHub before you build on it.</span></p>
+            <p class="caveat"><span>If GitHub isn't connected for your team, <code>Agent.create()</code> throws <code>IntegrationNotConnectedError</code> with a <code>provider</code> naming the missing integration and a <code>helpUrl</code> to reconnect. Log it for whoever runs the builder app.</span></p>
+            <p class="caveat"><span><b><code>requireUser</code> is a placeholder</b> for your own SSO or auth check. Reject the request before any agent is created.</span></p>
+          </div>
+        </details>
+
+        <details class="step reveal" id="step-5">
+          <summary><span class="num" aria-hidden="true">05</span><div><h3 data-n="05">Stream progress back to the requester</h3><p class="one">Relay <code>run.stream()</code> as server-sent events, then send the final status and pull request link.</p></div><span class="toggle" aria-hidden="true"><svg viewBox="0 0 12 12"><path d="M6 2v8M2 6h8" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg></span></summary>
+          <div class="body">
+            <p>Relay <code>run.stream()</code> events as server-sent events so people can watch the agent plan, edit and test. When it finishes, <code>run.wait()</code> returns the final status and the pull request link.</p>
+            <figure class="code"><div class="code-head"><span class="code-title">lib/stream-run.ts</span><button class="copy" type="button">Copy</button></div><pre><code data-lang="ts">import type { Run } from "@cursor/sdk";
+
+export function streamRun(run: Run) {
+  const enc = new TextEncoder();
+  const body = new ReadableStream({
+    async start(ctrl) {
+      const send = (data: unknown) =&gt;
+        ctrl.enqueue(enc.encode(`data: ${JSON.stringify(data)}\n\n`));
+
+      // assistant text, tool calls and status updates as they happen
+      for await (const event of run.stream()) send(event);
+
+      const result = await run.wait();
+      const prUrl = result.git?.branches[0]?.prUrl;
+      send({ type: "done", status: result.status, prUrl });
+      ctrl.close();
+    },
+  });
+  return new Response(body, {
+    headers: { "Content-Type": "text/event-stream" },
+  });
+}</code></pre></figure>
+            <p class="caveat"><span><b><code>prUrl</code> is only set when a pull request opens.</b> Handle it being undefined, for example when the run fails or makes no changes.</span></p>
+            <p class="caveat"><span>Cloud runs keep going if the browser disconnects, so you can reattach later with <code>Agent.getRun()</code> or <code>Agent.resume()</code>.</span></p>
+          </div>
+        </details>
+
+        <details class="step reveal" id="step-6">
+          <summary><span class="num" aria-hidden="true">06</span><div><h3 data-n="06">Review, preview and iterate</h3><p class="one">A person approves every change, and follow-ups go back to the same agent.</p></div><span class="toggle" aria-hidden="true"><svg viewBox="0 0 12 12"><path d="M6 2v8M2 6h8" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg></span></summary>
+          <div class="body">
+            <p>Nothing ships without a person signing off. Reviewers open the pull request in GitHub, a required status check runs GitHub Actions for your tests, and a preview app on an Azure App Service deployment slot gives them a URL to try it, posted as a comment on the pull request (step 07). Require an approving review in the same branch protection rule so a person approves before anything merges. Change requests go back to the same agent, so it keeps the full conversation and context.</p>
+            <figure class="code"><div class="code-head"><span class="code-title">follow-up.ts</span><button class="copy" type="button">Copy</button></div><pre><code data-lang="ts">import { Agent } from "@cursor/sdk";
+
+const agent = await Agent.resume(agentId, {
+  apiKey: process.env.CURSOR_API_KEY!,
+});
+const run = await agent.send("Add a date filter and an empty state");
+await run.wait();   // same agent, same conversation</code></pre></figure>
+            <p class="caveat"><span>For a fast local loop while you build, the <a href="https://github.com/cursor/cookbook/tree/main/sdk/app-builder" target="_blank" rel="noopener">Cursor Cookbook app-builder</a> runs a local agent against a hot-reloading preview.</span></p>
+          </div>
+        </details>
+
+        <details class="step reveal" id="deploy">
+          <summary><span class="num" aria-hidden="true">07</span><div><h3 data-n="07">Deploy to Azure</h3><p class="one">Merging is the deploy, through GitHub Actions to Azure App Service.</p></div><span class="toggle" aria-hidden="true"><svg viewBox="0 0 12 12"><path d="M6 2v8M2 6h8" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg></span></summary>
+          <div class="body">
+            <p>Merging is the deploy. Agents never hold Azure credentials; GitHub Actions signs in to Microsoft Entra ID with a federated OIDC credential for each run, and rolling back is just a revert through the same path. Every generated app runs as a Linux container on Azure App Service, built from the Dockerfile in the template and pulled from Azure Container Registry, and the builder app itself can run there too. Each app gets a URL on <code>&lt;app&gt;.azurewebsites.net</code>, and each deployment slot gets its own on <code>&lt;app&gt;-&lt;slot&gt;.azurewebsites.net</code>.</p>
+            <p>Prepare the subscription once. Create a resource group, a container registry, a Linux App Service plan that supports slots, the app with a <code>staging</code> slot, and let the app pull from the registry with its managed identity.</p>
+            <figure class="code"><div class="code-head"><span class="code-title">terminal, once</span><button class="copy" type="button">Copy</button></div><pre><code data-lang="sh">az group create --name rg-cop-appstudio-prod-scus --location southcentralus
+
+az acr create --resource-group rg-cop-appstudio-prod-scus \
+  --name crcopappstudio --sku Standard
+
+az appservice plan create --resource-group rg-cop-appstudio-prod-scus \
+  --name asp-cop-appstudio-prod --is-linux --sku P1v3
+
+az webapp create --resource-group rg-cop-appstudio-prod-scus \
+  --plan asp-cop-appstudio-prod --name cop-app-template \
+  --container-image-name crcopappstudio.azurecr.io/apps/app-template:latest
+az webapp deployment slot create --resource-group rg-cop-appstudio-prod-scus \
+  --name cop-app-template --slot staging
+
+az webapp identity assign --resource-group rg-cop-appstudio-prod-scus --name cop-app-template
+az role assignment create --assignee &lt;app-principal-id&gt; --role AcrPull \
+  --scope &lt;registry-id&gt;</code></pre></figure>
+            <p>Then create the identity GitHub Actions signs in as. Its federated credential only accepts OIDC tokens from your template repo's <code>production</code> environment (add a second one for <code>preview</code>), so no other repo, and no long-lived secret, can deploy.</p>
+            <figure class="code"><div class="code-head"><span class="code-title">github-federated-credential.json</span><button class="copy" type="button">Copy</button></div><pre><code data-lang="json">{
+  "name": "github-app-template-production",
+  "issuer": "https://token.actions.githubusercontent.com",
+  "subject": "repo:your-org/app-template:environment:production",
+  "audiences": ["api://AzureADTokenExchange"]
+}</code></pre></figure>
+            <figure class="code"><div class="code-head"><span class="code-title">terminal, once</span><button class="copy" type="button">Copy</button></div><pre><code data-lang="sh">az ad app create --display-name github-app-template-deploy
+az ad sp create --id &lt;client-id&gt;
+az ad app federated-credential create --id &lt;client-id&gt; \
+  --parameters github-federated-credential.json
+
+az role definition create --role-definition github-deploy-role.json
+az role assignment create --assignee &lt;client-id&gt; \
+  --role "App Studio GitHub Deployer" \
+  --scope /subscriptions/&lt;subscription-id&gt;/resourceGroups/rg-cop-appstudio-prod-scus</code></pre></figure>
+            <p>One workflow in the template does three jobs. On a pull request it runs the tests, deploys a preview to a deployment slot named after the pull request, and comments the preview URL on the pull request. After merge it deploys the merged commit to the <code>staging</code> slot and swaps it into production, so the new version is warm before it takes traffic. When a pull request closes, merged or not, it deletes that preview slot. The official <code>azure/login</code> and <code>azure/webapps-deploy</code> actions do the sign-in and the deploy.</p>
+            <figure class="code"><div class="code-head"><span class="code-title">.github/workflows/deploy.yml</span><button class="copy" type="button">Copy</button></div><pre><code data-lang="yaml">name: deploy
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, closed]
+  push:
+    branches: [main]          # after merge: production deploy
+
+permissions:
+  id-token: write             # OIDC token for Microsoft Entra ID
+  contents: read
+  pull-requests: write        # preview URL comment
+
+env:
+  AZURE_CLIENT_ID: "00000000-0000-0000-0000-000000000000"
+  AZURE_TENANT_ID: "00000000-0000-0000-0000-000000000000"
+  AZURE_SUBSCRIPTION_ID: "00000000-0000-0000-0000-000000000000"
+  RESOURCE_GROUP: rg-cop-appstudio-prod-scus
+  REGISTRY: crcopappstudio
+  WEBAPP: cop-app-template
+  SLOT: ${{ github.event_name == 'push' &amp;&amp; 'staging' || format('pr-{0}', github.event.number) }}
+
+jobs:
+  deploy:
+    if: github.event.action != 'closed'
+    runs-on: ubuntu-latest
+    environment: ${{ github.event_name == 'push' &amp;&amp; 'production' || 'preview' }}
+    steps:
+      - uses: actions/checkout@v5
+      - run: npm ci &amp;&amp; npm test
+
+      - uses: azure/login@v2
+        with:
+          client-id: ${{ env.AZURE_CLIENT_ID }}
+          tenant-id: ${{ env.AZURE_TENANT_ID }}
+          subscription-id: ${{ env.AZURE_SUBSCRIPTION_ID }}
+
+      - run: az acr login --name "$REGISTRY"
+
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: ${{ env.REGISTRY }}.azurecr.io/apps/app-template:${{ github.sha }}
+
+      - if: github.event_name == 'pull_request'
+        run: |
+          az webapp deployment slot create -g "$RESOURCE_GROUP" -n "$WEBAPP" --slot "$SLOT" \
+            || echo "Slot $SLOT already exists"
+
+      - id: deploy
+        uses: azure/webapps-deploy@v3
+        with:
+          app-name: ${{ env.WEBAPP }}
+          slot-name: ${{ env.SLOT }}
+          images: ${{ env.REGISTRY }}.azurecr.io/apps/app-template:${{ github.sha }}
+
+      - if: github.event_name == 'push'
+        run: az webapp deployment slot swap -g "$RESOURCE_GROUP" -n "$WEBAPP" --slot staging --target-slot production
+
+      - if: github.event_name == 'pull_request'
+        run: gh pr comment ${{ github.event.number }} --body "Preview app is live at ${{ steps.deploy.outputs.webapp-url }}"
+        env:
+          GH_TOKEN: ${{ github.token }}
+
+  cleanup:
+    if: github.event.action == 'closed'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: azure/login@v2
+        with:
+          client-id: ${{ env.AZURE_CLIENT_ID }}
+          tenant-id: ${{ env.AZURE_TENANT_ID }}
+          subscription-id: ${{ env.AZURE_SUBSCRIPTION_ID }}
+      - run: |
+          az webapp deployment slot delete -g "$RESOURCE_GROUP" -n "$WEBAPP" --slot "$SLOT" \
+            || echo "No preview slot to delete"</code></pre></figure>
+            <p>GitHub runs pull request workflows straight from the YAML, so there is no pipeline to register. Protect <code>main</code> once so the <code>deploy</code> check and an approving review are required before anything merges.</p>
+            <figure class="code"><div class="code-head"><span class="code-title">terminal, once</span><button class="copy" type="button">Copy</button></div><pre><code data-lang="sh">gh api -X PUT repos/your-org/app-template/branches/main/protection --input - &lt;&lt;'EOF'
+{
+  "required_status_checks": { "strict": true, "contexts": ["deploy"] },
+  "enforce_admins": true,
+  "required_pull_request_reviews": { "required_approving_review_count": 1 },
+  "restrictions": null
+}
+EOF</code></pre></figure>
+            <p>Run the builder app on App Service the same way, and keep the Cursor API key in Azure Key Vault. A Key Vault reference in the app settings resolves the secret at runtime through the app's managed identity, so the key never appears in the image, the app configuration or the repo.</p>
+            <figure class="code"><div class="code-head"><span class="code-title">terminal, builder app</span><button class="copy" type="button">Copy</button></div><pre><code data-lang="sh">az keyvault create --resource-group rg-cop-appstudio-prod-scus \
+  --name kv-cop-appstudio --enable-rbac-authorization true
+az keyvault secret set --vault-name kv-cop-appstudio \
+  --name cursor-api-key --value "$CURSOR_API_KEY"
+
+az webapp create --resource-group rg-cop-appstudio-prod-scus \
+  --plan asp-cop-appstudio-prod --name cop-vibe-builder \
+  --container-image-name crcopappstudio.azurecr.io/vibe-builder:latest
+az webapp identity assign --resource-group rg-cop-appstudio-prod-scus --name cop-vibe-builder
+az role assignment create --assignee &lt;builder-principal-id&gt; \
+  --role "Key Vault Secrets User" --scope &lt;key-vault-id&gt;
+
+az webapp config appsettings set --resource-group rg-cop-appstudio-prod-scus \
+  --name cop-vibe-builder --settings WEBSITES_PORT=8080 \
+  CURSOR_API_KEY="@Microsoft.KeyVault(VaultName=kv-cop-appstudio;SecretName=cursor-api-key)"</code></pre></figure>
+            <p class="caveat"><span><b><code>&lt;subscription-id&gt;</code>, <code>&lt;client-id&gt;</code>, <code>your-org</code> and the resource names are placeholders.</b> <code>github-deploy-role.json</code> is a least-privilege custom role scoped to the resource group: push to the registry, and create, deploy, swap and delete App Service slots, which preview cleanup needs. The template's <code>azure/</code> folder has a starting point. See <a href="https://learn.microsoft.com/azure/developer/github/connect-from-azure-openid-connect" target="_blank" rel="noopener">Use GitHub Actions with OpenID Connect</a>.</span></p>
+            <p class="caveat"><span><b>App Service apps are reachable from the internet by default.</b> For internal-only apps, add access restrictions or a private endpoint and VNet integration on the plan, and agree the exposure with your platform team.</span></p>
+            <p class="caveat"><span><b>If production needs a change approval,</b> add required reviewers to the <code>production</code> GitHub environment. The production deploy then waits for that sign-off without any change to the workflow.</span></p>
+            <p class="caveat"><span><b>Why App Service and not Static Web Apps?</b> The template is a small Node server with a <code>/ping</code> health check, shipped as a container, which App Service runs as is. Static Web Apps suits static front ends; if your generated apps are pure HTML, it is a lighter option with built-in pull request preview environments. Premium v3 plans allow up to 20 slots per app, which caps concurrent previews.</span></p>
+          </div>
+        </details>
+
+        <details class="step reveal" id="step-8">
+          <summary><span class="num" aria-hidden="true">08</span><div><h3 data-n="08">Govern it and keep improving</h3><p class="one">Tag agents, track spend per app, archive what you no longer need, and refine the template.</p></div><span class="toggle" aria-hidden="true"><svg viewBox="0 0 12 12"><path d="M6 2v8M2 6h8" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg></span></summary>
+          <div class="body">
+            <p>Tag every agent, track spend per generated app, and archive what you no longer need. SDK runs follow your team's Privacy Mode and model settings, and their spend appears under the SDK tag in the usage dashboard. When reviewers keep asking for the same fix, fold it into the template's rules.</p>
+            <figure class="code"><div class="code-head"><span class="code-title">govern.ts</span><button class="copy" type="button">Copy</button></div><pre><code data-lang="ts">import { Agent } from "@cursor/sdk";
+
+const { cost } = await agent.getUsage();
+console.log(cost?.chargedCents);   // spend for this app
+
+// every cloud agent, including what each one built
+const { items } = await Agent.list({ runtime: "cloud" });
+
+await Agent.archive(agentId);      // transcript stays readable</code></pre></figure>
+            <p class="caveat"><span><code>cost</code> can take a moment to settle after a run ends and is absent until it does, which is why the example reads it with optional chaining.</span></p>
+          </div>
+        </details>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="container">
+    <div class="row">
+      <p class="fine"><b>Built with the Cursor SDK.</b> Package names, methods and options were checked against the Cursor TypeScript SDK docs and <code>@cursor/sdk</code> 1.0.35 in October 2026. Model ids and features vary by plan and team settings, so confirm with <code>Cursor.models.list()</code>. GitHub support follows Cursor's GitHub integration docs, and Azure CLI and workflow commands follow the Azure App Service docs, the <code>azure/login</code> and <code>azure/webapps-deploy</code> actions and Microsoft's guide to GitHub Actions with OpenID Connect. Helpers such as <code>requireUser</code> and names such as <code>&lt;subscription-id&gt;</code> stand in for your own code and resources.</p>
+      <nav aria-label="References">
+        <a href="https://cursor.com/docs/sdk/typescript" target="_blank" rel="noopener">TypeScript SDK</a>
+        <a href="https://cursor.com/docs/cloud-agent" target="_blank" rel="noopener">Cloud Agents</a>
+        <a href="https://cursor.com/docs/integrations/github" target="_blank" rel="noopener">GitHub integration</a>
+        <a href="https://learn.microsoft.com/azure/app-service/deploy-staging-slots" target="_blank" rel="noopener">App Service slots</a>
+        <a href="https://github.com/Azure/webapps-deploy" target="_blank" rel="noopener">Web Apps deploy action</a>
+        <a href="https://cursor.com/docs/rules" target="_blank" rel="noopener">Rules</a>
+        <a href="https://cursor.com/docs/hooks" target="_blank" rel="noopener">Hooks</a>
+        <a href="https://github.com/cursor/cookbook" target="_blank" rel="noopener">Cookbook</a>
+      </nav>
+    </div>
+  </div>
+</footer>
+
+<script>
+(() => {
+  const root = document.documentElement;
+  root.classList.add("js");
+  const reduce = matchMedia("(prefers-reduced-motion: reduce)");
+
+  const nav = document.getElementById("nav");
+  const onScroll = () => nav.classList.toggle("scrolled", scrollY > 4);
+  addEventListener("scroll", onScroll, { passive: true });
+  onScroll();
+
+  const reveals = document.querySelectorAll(".reveal");
+  if ("IntersectionObserver" in window && !reduce.matches) {
+    const io = new IntersectionObserver((entries) => {
+      entries.forEach((e) => {
+        if (e.isIntersecting) { e.target.classList.add("in"); io.unobserve(e.target); }
+      });
+    }, { rootMargin: "0px 0px -8% 0px" });
+    reveals.forEach((el) => io.observe(el));
+  } else {
+    reveals.forEach((el) => el.classList.add("in"));
+  }
+
+  const KW = /^(import|from|export|const|let|async|await|function|return|new|for|of|type|if|else)$/;
+  const esc = (s) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  const rules = {
+    ts: /(\/\/[^\n]*)|("(?:[^"\\\n]|\\.)*"|'(?:[^'\\\n]|\\.)*'|`(?:[^`\\]|\\.)*`)|\b(\d+(?:\.\d+)?)\b|([A-Za-z_$][\w$]*)(?=\s*\()|([A-Za-z_$][\w$]*)/g,
+    sh: /((?:^|(?<=\s))#[^\n]*)|("(?:[^"\\\n]|\\.)*")|(\$[A-Z_]+)|(^[a-z][\w.-]*|(?<=&&\s)[a-z][\w.-]*|(?<=^\.\/)[\w.-]+)/gm,
+    md: /(^---$)|(^[a-zA-Z]+:)/gm,
+    yaml: /((?:^|(?<=\s))#[^\n]*)|("(?:[^"\\\n]|\\.)*"|'(?:[^'\\\n]|\\.)*')|(^\s*-?\s*[A-Za-z_][\w.-]*:(?=\s|$))/gm,
+    json: /("(?:[^"\\\n]|\\.)*")(?=\s*:)|("(?:[^"\\\n]|\\.)*")/g,
+  };
+  document.querySelectorAll("pre code[data-lang]").forEach((el) => {
+    const lang = el.dataset.lang, src = el.textContent, re = rules[lang];
+    if (!re) return;
+    let out = "", last = 0, m;
+    re.lastIndex = 0;
+    while ((m = re.exec(src))) {
+      if (m[0] === "") { re.lastIndex++; continue; }
+      out += esc(src.slice(last, m.index));
+      const t = esc(m[0]);
+      let cls = "";
+      if (lang === "ts") cls = m[1] ? "c" : m[2] ? "s" : m[3] ? "m" : m[4] ? (KW.test(m[4]) ? "k" : "f") : KW.test(m[5]) ? "k" : "";
+      else if (lang === "sh") cls = m[1] ? "c" : m[2] ? "s" : m[3] ? "m" : "f";
+      else if (lang === "yaml") cls = m[1] ? "c" : m[2] ? "s" : "k";
+      else if (lang === "json") cls = m[1] ? "k" : "s";
+      else cls = m[1] ? "c" : "k";
+      out += cls ? `<span class="${cls}">${t}</span>` : t;
+      last = m.index + m[0].length;
+    }
+    el.innerHTML = out + esc(src.slice(last));
+  });
+
+  document.querySelectorAll(".copy").forEach((b) => {
+    b.addEventListener("click", async () => {
+      const code = b.closest("figure").querySelector("code").textContent;
+      try { await navigator.clipboard.writeText(code); b.textContent = "Copied"; }
+      catch { b.textContent = "Press Ctrl+C"; }
+      setTimeout(() => (b.textContent = "Copy"), 1400);
+    });
+  });
+
+  const steps = [...document.querySelectorAll("details.step")];
+  const toggleAll = document.getElementById("toggle-all");
+  const count = document.getElementById("open-count");
+  const sync = () => {
+    const open = steps.filter((d) => d.open).length;
+    count.textContent = `${open} of ${steps.length} open`;
+    toggleAll.textContent = open === steps.length ? "Collapse all" : "Expand all";
+    toggleAll.setAttribute("aria-expanded", String(open === steps.length));
+  };
+  steps.forEach((d) => d.addEventListener("toggle", sync));
+  toggleAll.addEventListener("click", () => {
+    const expand = steps.some((d) => !d.open);
+    steps.forEach((d) => (d.open = expand));
+    sync();
+  });
+  const openFromHash = () => {
+    const target = location.hash && document.querySelector(location.hash);
+    if (target && target.matches("details.step")) {
+      target.open = true;
+      target.classList.add("in");
+    }
+  };
+  addEventListener("hashchange", openFromHash);
+  openFromHash();
+  sync();
+
+  const nodes = [...document.querySelectorAll(".node")];
+  const status = document.getElementById("flow-status");
+  const labels = nodes.map((n) => n.querySelector(".t").textContent);
+  const idle = status.textContent;
+  let i = -1, timer = null;
+  const tick = () => {
+    i = (i + 1) % (nodes.length + 2);
+    nodes.forEach((n, j) => {
+      n.classList.toggle("active", j === i);
+      n.classList.toggle("done", j < i && i < nodes.length);
+    });
+    status.textContent = i < nodes.length ? `Stage ${i + 1} of ${nodes.length}: ${labels[i]}` : idle;
+  };
+  const start = () => { if (!timer && !reduce.matches) { tick(); timer = setInterval(tick, 1500); } };
+  const stop = () => { clearInterval(timer); timer = null; };
+  const win = document.querySelector(".window");
+  if ("IntersectionObserver" in window) {
+    new IntersectionObserver(([e]) => (e.isIntersecting ? start() : stop()), { threshold: .35 }).observe(win);
+  }
+  reduce.addEventListener?.("change", () => { if (reduce.matches) { stop(); nodes.forEach((n) => n.classList.remove("active", "done")); status.textContent = idle; } });
+
+  const ICON = {
+    person: '<circle cx="8" cy="5.3" r="2.6"/><path d="M3 13.8c.8-2.7 2.7-4.1 5-4.1s4.2 1.4 5 4.1"/>',
+    check: '<path d="m3 8.6 3.2 3.2L13 5"/>',
+    server: '<rect x="2.5" y="2.5" width="11" height="4.5" rx="1.2"/><rect x="2.5" y="9" width="11" height="4.5" rx="1.2"/><path d="M5 4.75h.01M5 11.25h.01"/>',
+    spark: '<path d="M8 2.5v2M8 11.5v2M2.5 8h2M11.5 8h2M4.2 4.2l1.4 1.4M10.4 10.4l1.4 1.4M4.2 11.8l1.4-1.4M10.4 5.6l1.4-1.4"/>',
+    shield: '<path d="M8 1.8 13 3.8v3.9c0 3-2.1 5.4-5 6.5-2.9-1.1-5-3.5-5-6.5V3.8Z"/><path d="m5.8 8 1.5 1.5 3-3"/>',
+    file: '<path d="M4 1.8h5l3 3v9.4H4Z"/><path d="M9 1.8v3h3M6 8.5h4M6 11h4"/>',
+    branch: '<circle cx="4.5" cy="4" r="1.5"/><circle cx="4.5" cy="12" r="1.5"/><circle cx="11.5" cy="12" r="1.5"/><path d="M4.5 5.5v5M11.5 10.5V7a2 2 0 0 0-2-2H8m1.5-1.5L8 5l1.5 1.5"/>',
+    loop: '<path d="M13 8a5 5 0 0 1-8.6 3.5M3 8a5 5 0 0 1 8.6-3.5"/><path d="M11.8 1.8v2.9H8.9M4.2 14.2v-2.9h2.9"/>',
+    key: '<circle cx="5.5" cy="10.5" r="3"/><path d="M7.6 8.4 13.5 2.5M11 5l2 2M12.5 3.5 14 5"/>',
+    eye: '<path d="M1.5 8S4 3.5 8 3.5 14.5 8 14.5 8 12 12.5 8 12.5 1.5 8 1.5 8Z"/><circle cx="8" cy="8" r="2"/>',
+    globe: '<circle cx="8" cy="8" r="6"/><path d="M2 8h12M8 2c1.7 1.8 2.5 3.8 2.5 6S9.7 12.2 8 14c-1.7-1.8-2.5-3.8-2.5-6S6.3 3.8 8 2Z"/>',
+    cloud: '<path d="M4.6 12.5h6.9a3 3 0 0 0 .3-6 4 4 0 0 0-7.6 1.1 2.5 2.5 0 0 0 .4 4.9Z"/>',
+  };
+  const STEP_ID = { 1: "step-1", 2: "step-2", 3: "step-3", 4: "step-4", 5: "step-5", 6: "step-6", 7: "deploy", 8: "step-8" };
+  const ZONES = [
+    { name: "Author", sub: ["People who ask", "and approve"], c: "#4db6a4", ic: "person" },
+    { name: "Cursor build", sub: ["Builder app, SDK", "and cloud agents"], c: "#18181b", ic: "spark" },
+    { name: "GitHub", sub: ["Repos, pull requests", "and Actions"], c: "#2f6feb", ic: "branch" },
+    { name: "Azure", sub: ["App Service,", "Key Vault"], c: "#0e7490", ic: "cloud" },
+  ];
+  const NODES = [
+    { id: "req", z: 0, col: 0, k: "Prompt box", t: "Requester", d: "Describes the app needed", s: [4], ic: "person" },
+    { id: "rev", z: 0, col: 3, k: "Human sign-off", t: "Reviewer", d: "Signs off on every PR", s: [6], ic: "check" },
+    { id: "route", z: 1, col: 0, k: "@cursor/sdk", t: "Builder app route", d: "Calls Agent.create()", s: [2, 4], ic: "server" },
+    { id: "agent", z: 1, col: 1, k: "Cursor", t: "Cloud agent", d: "Builds and tests in a VM", s: [4, 5], ic: "spark" },
+    { id: "gov", z: 1, col: 2, k: "Cursor", t: "Usage and archive", d: "Tags, spend per app", s: [8], ic: "shield" },
+    { id: "tpl", z: 2, col: 1, k: "GitHub", t: "App template", d: "Rules, hooks, Dockerfile", s: [3], ic: "file" },
+    { id: "pr", z: 2, col: 2, k: "GitHub", t: "Branch and pull request", d: "One per request", s: [4, 6], ic: "branch" },
+    { id: "pipe", z: 2, col: 3, k: "GitHub Actions", t: "deploy.yml", d: "Tests, preview, prod", s: [7], ic: "loop" },
+    { id: "secret", z: 3, col: 0, k: "Key Vault", t: "Cursor API key secret", d: "Read by the builder app", s: [1, 7], ic: "key" },
+    { id: "prev", z: 3, col: 2, k: "App Service", t: "Preview slot", d: "pr-<n> slot per PR", s: [6, 7], ic: "eye" },
+    { id: "prod", z: 3, col: 3, k: "App Service", t: "Production app", d: "Staging slot swap", s: [7], ic: "globe" },
+  ];
+  // label: [text, x, y, anchor, inBand]
+  const EDGES = [
+    { a: "req", b: "route", d: "M221 90V168", l: ["prompt", 229, 133, "start"], s: [4], txt: "prompt to" },
+    { a: "route", b: "agent", d: "M316 196H365", l: ["send()", 341.5, 188, "middle"], s: [4], txt: "<code>agent.send()</code> to" },
+    { a: "agent", b: "route", d: "M367 222H318", l: ["stream", 341.5, 237, "middle"], s: [5], txt: "streamed progress to" },
+    { a: "tpl", b: "agent", d: "M462 326V248", l: ["clone", 454, 290, "end"], s: [3], txt: "cloned by" },
+    { a: "agent", b: "gov", d: "M557 208H606", l: ["usage", 582.5, 200, "middle"], s: [8], txt: "tags and usage to" },
+    { a: "agent", b: "pr", d: "M520 246V286H672V324", l: ["branch + PR", 596, 280, "middle"], s: [4], txt: "branch and PR in" },
+    { a: "rev", b: "pr", d: "M944 90V298H734V324", l: ["review", 952, 212, "start", 1], s: [6], txt: "approves in" },
+    { a: "rev", b: "agent", d: "M849 60H500V168", l: ["follow-up", 674, 52, "middle", 1], s: [6], txt: "follow-ups to" },
+    { a: "pr", b: "pipe", d: "M798 352H847", l: ["checks", 823.5, 344, "middle"], s: [6, 7], txt: "required checks run" },
+    { a: "pr", b: "pipe", d: "M798 376H847", l: ["merge", 823.5, 392, "middle"], s: [7], txt: "merge to main runs" },
+    { a: "pipe", b: "prev", d: "M880 402V442H703V480", l: ["preview deploy", 791.5, 436, "middle"], s: [6, 7], txt: "preview deploy (OIDC) to" },
+    { a: "pipe", b: "prod", d: "M944 402V480", l: ["prod deploy", 952, 446, "start"], s: [7], txt: "prod deploy (OIDC) to" },
+    { a: "secret", b: "route", d: "M221 482V248", l: ["Key Vault ref", 229, 367, "start", 1], s: [1, 7], txt: "Key Vault reference app setting to" },
+  ];
+  const X = [126, 367, 608, 849], ZY = [0, 156, 312, 468], W = 190, H = 76;
+  const byId = Object.fromEntries(NODES.map((n) => [n.id, n]));
+  const pad = (n) => String(n).padStart(2, "0");
+  const ico = (k) => `<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICON[k]}</svg>`;
+  const escT = (s) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+
+  const canvas = document.getElementById("arch-canvas");
+  const stack = document.getElementById("arch-stack");
+  const legend = [...document.querySelectorAll("#arch-legend a")];
+  if (canvas && stack) {
+    let svg = `<svg viewBox="-2 -2 1060 576" role="group" aria-label="Solution architecture diagram"><defs><marker id="ah" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ae-head" d="M1 1.2 7 4 1 6.8Z"/></marker><marker id="ahh" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M1 1.2 7 4 1 6.8Z" fill="#0a0a0a"/></marker></defs>`;
+    ZONES.forEach((z, i) => {
+      const y = ZY[i];
+      svg += `<g><rect class="az-band" x="0" y="${y}" width="1056" height="104" rx="18"/>` +
+        `<rect x="18" y="${y + 18}" width="20" height="20" rx="6" fill="${z.c}"/><svg x="22" y="${y + 22}" width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="#fff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">${ICON[z.ic]}</svg>` +
+        `<text class="az-name" x="18" y="${y + 60}">${z.name}</text>` +
+        `<text class="az-sub" x="18" y="${y + 76}">${z.sub[0]}</text><text class="az-sub" x="18" y="${y + 90}">${z.sub[1]}</text></g>`;
+    });
+    EDGES.forEach((e, i) => {
+      const [t, lx, ly, anchor, inBand] = e.l;
+      const c = ZONES[byId[e.b].z].c;
+      svg += `<g class="ae" data-i="${i}" style="--c:${c}"><path class="ae-line" d="${e.d}" marker-end="url(#ah)"/><path class="ae-flow" d="${e.d}"/>` +
+        `<text class="ae-l${inBand ? " in-band" : ""}" x="${lx}" y="${ly}" text-anchor="${anchor}">${t}</text></g>`;
+    });
+    NODES.forEach((n) => {
+      const x = X[n.col], y = ZY[n.z] + 14, z = ZONES[n.z];
+      const badges = n.s.map((s, j) => {
+        const bx = x + W - 14 - 22 - (n.s.length - 1 - j) * 25;
+        return `<g class="an-b" data-step="${s}"><rect x="${bx}" y="${y + 12}" width="22" height="18" rx="9"/><text x="${bx + 11}" y="${y + 24.5}">${pad(s)}</text></g>`;
+      }).join("");
+      const label = `${n.t}. ${n.d}. Step${n.s.length > 1 ? "s" : ""} ${n.s.map(pad).join(" and ")}.`;
+      svg += `<g class="an" data-id="${n.id}" tabindex="0" role="link" aria-label="${escT(label)}">` +
+        `<rect class="an-box" x="${x}" y="${y}" width="${W}" height="${H}" rx="14"/>` +
+        `<circle cx="${x + 25}" cy="${y + 21}" r="11" fill="${z.c}"/><svg x="${x + 19}" y="${y + 15}" width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="#fff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">${ICON[n.ic]}</svg>` +
+        `<text class="an-k" x="${x + 42}" y="${y + 24.5}">${escT(n.k)}</text>${badges}` +
+        `<text class="an-t" x="${x + 14}" y="${y + 50}">${escT(n.t)}</text>` +
+        `<text class="an-d" x="${x + 14}" y="${y + 66}">${escT(n.d)}</text></g>`;
+    });
+    canvas.innerHTML = svg + "</svg>";
+
+    stack.innerHTML = ZONES.map((z, zi) => {
+      const cards = NODES.filter((n) => n.z === zi).map((n) => {
+        const flows = EDGES.filter((e) => e.a === n.id).map((e) => `<li><span>${e.txt} ${escT(byId[e.b].t)} <span class="anc-n">(${e.s.map(pad).join(", ")})</span></span></li>`).join("");
+        return `<a class="anc" href="#${STEP_ID[n.s[0]]}" data-id="${n.id}" style="--c:${z.c}">` +
+          `<div class="anc-top"><span class="ic">${ico(n.ic)}</span><span class="anc-k">${escT(n.k)}</span><span class="anc-s">${n.s.map((s) => `<i>${pad(s)}</i>`).join("")}</span></div>` +
+          `<div class="anc-t">${escT(n.t)}</div><div class="anc-d">${escT(n.d)}</div>` +
+          (flows ? `<ul class="anc-f">${flows}</ul>` : "") + `</a>`;
+      }).join("");
+      return `<section class="azs" aria-label="${z.name}"><div class="azs-head" style="--c:${z.c}"><span class="ic">${ico(z.ic)}</span><div><b>${z.name}</b><span>${z.sub.join(" ")}</span></div></div><div class="azs-list">${cards}</div></section>`;
+    }).join("");
+
+    const svgEl = canvas.querySelector("svg");
+    const gNodes = [...svgEl.querySelectorAll(".an")];
+    const gEdges = [...svgEl.querySelectorAll(".ae")];
+    const clear = () => {
+      svgEl.classList.remove("focus");
+      gNodes.forEach((g) => g.classList.remove("hot"));
+      gEdges.forEach((g) => { g.classList.remove("hot"); g.querySelector(".ae-line").setAttribute("marker-end", "url(#ah)"); });
+      legend.forEach((a) => a.classList.remove("hot"));
+      svgEl.querySelectorAll(".an-b.on").forEach((b) => b.classList.remove("on"));
+    };
+    const light = (nodeIds, edgeIdx, steps) => {
+      clear();
+      svgEl.classList.add("focus");
+      gNodes.forEach((g) => g.classList.toggle("hot", nodeIds.has(g.dataset.id)));
+      gEdges.forEach((g) => {
+        const on = edgeIdx.has(+g.dataset.i);
+        g.classList.toggle("hot", on);
+        if (on) g.querySelector(".ae-line").setAttribute("marker-end", "url(#ahh)");
+      });
+      legend.forEach((a) => a.classList.toggle("hot", steps.has(+a.dataset.step)));
+      svgEl.querySelectorAll(".an.hot .an-b").forEach((b) => b.classList.toggle("on", steps.has(+b.dataset.step)));
+    };
+    const lightNode = (id) => {
+      const ids = new Set([id]), idx = new Set();
+      EDGES.forEach((e, i) => { if (e.a === id || e.b === id) { idx.add(i); ids.add(e.a); ids.add(e.b); } });
+      light(ids, idx, new Set(byId[id].s));
+    };
+    const lightStep = (s) => {
+      const ids = new Set(NODES.filter((n) => n.s.includes(s)).map((n) => n.id));
+      const idx = new Set(EDGES.map((e, i) => (e.s.includes(s) ? i : -1)).filter((i) => i >= 0));
+      light(ids, idx, new Set([s]));
+    };
+    const go = (s) => {
+      const id = STEP_ID[s], el = document.getElementById(id);
+      if (!el) return;
+      el.open = true;
+      el.classList.add("in");
+      history.replaceState(null, "", "#" + id);
+      el.scrollIntoView({ behavior: reduce.matches ? "auto" : "smooth", block: "start" });
+      el.classList.remove("flash"); void el.offsetWidth; el.classList.add("flash");
+      sync();
+    };
+
+    gNodes.forEach((g) => {
+      const n = byId[g.dataset.id];
+      g.addEventListener("pointerenter", () => lightNode(n.id));
+      g.addEventListener("pointerleave", clear);
+      g.addEventListener("focus", () => lightNode(n.id));
+      g.addEventListener("blur", clear);
+      g.addEventListener("click", (ev) => {
+        const b = ev.target.closest(".an-b");
+        go(b ? +b.dataset.step : n.s[0]);
+      });
+      g.addEventListener("keydown", (ev) => { if (ev.key === "Enter" || ev.key === " ") { ev.preventDefault(); go(n.s[0]); } });
+      g.querySelectorAll(".an-b").forEach((b) => {
+        b.addEventListener("pointerenter", () => lightStep(+b.dataset.step));
+        b.addEventListener("pointerleave", () => lightNode(n.id));
+      });
+    });
+    legend.forEach((a) => {
+      const s = +a.dataset.step;
+      a.addEventListener("pointerenter", () => lightStep(s));
+      a.addEventListener("pointerleave", clear);
+      a.addEventListener("focus", () => lightStep(s));
+      a.addEventListener("blur", clear);
+      a.addEventListener("click", (ev) => { ev.preventDefault(); go(s); });
+    });
+    stack.querySelectorAll(".anc").forEach((a) => {
+      a.addEventListener("click", (ev) => { ev.preventDefault(); go(byId[a.dataset.id].s[0]); });
+    });
+  }
+})();
+</script>
+</body>
+</html>
